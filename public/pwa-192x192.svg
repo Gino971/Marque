@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">Feuille de marque Tarot</title>
+  <desc id="desc">Icône de l'application de score de tarot.</desc>
+  <rect width="192" height="192" rx="40" fill="#0f172a" />
+  <circle cx="96" cy="96" r="62" fill="#facc15" opacity="0.18" />
+  <rect x="48" y="52" width="96" height="88" rx="16" fill="#f8fafc" />
+  <rect x="60" y="66" width="72" height="10" rx="5" fill="#0f172a" opacity="0.82" />
+  <rect x="60" y="86" width="48" height="10" rx="5" fill="#0f172a" opacity="0.82" />
+  <rect x="60" y="106" width="60" height="10" rx="5" fill="#0f172a" opacity="0.82" />
+  <path d="M132 60l16 16-16 16" fill="none" stroke="#facc15" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
