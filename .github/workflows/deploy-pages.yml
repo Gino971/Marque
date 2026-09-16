@@ -1,10 +1,10 @@
 name: Deploy to gh-pages
 
-on:
+'on':
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -32,10 +32,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Prepare .nojekyll
+        run: touch dist/.nojekyll
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ./dist
+          publish_dir: dist
           force_orphan: true
