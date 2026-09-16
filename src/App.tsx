@@ -122,6 +122,17 @@ export default function App() {
     }));
   };
 
+  const focusScoreInput = (rowIndex: number, playerIndex: number) => {
+    requestAnimationFrame(() => {
+      const input = inputRefs.current[rowIndex]?.[playerIndex];
+      input?.focus({ preventScroll: true });
+      if (input) {
+        const length = input.value.length;
+        input.setSelectionRange(length, length);
+      }
+    });
+  };
+
   const toggleScoreSign = (rowIndex: number, playerIndex: number) => {
     if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
       return;
@@ -144,15 +155,12 @@ export default function App() {
         draftScore: nextValue
       };
     });
+  };
 
-    requestAnimationFrame(() => {
-      const input = inputRefs.current[rowIndex]?.[playerIndex];
-      input?.focus();
-      if (input) {
-        const length = input.value.length;
-        input.setSelectionRange(length, length);
-      }
-    });
+  const handleScoreSignPointerDown = (rowIndex: number, playerIndex: number, event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    toggleScoreSign(rowIndex, playerIndex);
+    focusScoreInput(rowIndex, playerIndex);
   };
 
   const commitCellScore = (rowIndex: number, playerIndex: number, rawValue: string, inputElement: HTMLInputElement) => {
@@ -457,9 +465,7 @@ export default function App() {
                                 className={isNegativeScore ? 'score-sign score-sign--active' : 'score-sign'}
                                 aria-label={`Basculer le signe du score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
                                 aria-pressed={isNegativeScore}
-                                onPointerDown={(event) => event.preventDefault()}
-                                onMouseDown={(event) => event.preventDefault()}
-                                onClick={() => toggleScoreSign(rowIndex, playerIndex)}
+                                onPointerDown={(event) => handleScoreSignPointerDown(rowIndex, playerIndex, event)}
                               >
                                 −
                               </button>
