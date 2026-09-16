@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 type RowState = {
   takerIndex: number | null;
@@ -84,7 +84,8 @@ export default function App() {
   const [rows, setRows] = useState<RowState[]>(() => Array.from({ length: MAX_GAMES }, () => createEmptyRow()));
   const [pendingPlayerSetup, setPendingPlayerSetup] = useState<PlayerSetup | null>(null);
   const [pendingReset, setPendingReset] = useState(false);
-  const inputRefs = useRef<Array<Array<HTMLInputElement | null>>>([]);
+  const [activeCell, setActiveCell] = useState<{ rowIndex: number; playerIndex: number } | null>(null);
+  const [keypadError, setKeypadError] = useState<string | null>(null);
 
   const { playerCount, divider } = getPlayerSetupConfig(playerSetup);
   const visiblePlayers = useMemo(() => Array.from({ length: playerCount }, (_, index) => index), [playerCount]);
@@ -94,123 +95,150 @@ export default function App() {
     setRows((currentRows) => currentRows.map((row, index) => (index === rowIndex ? updater(row) : row)));
   };
 
+  const MAX_SCORE_LENGTH = 5;
+
   const startEditingCell = (rowIndex: number, playerIndex: number) => {
-    if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
-      return;
-    }
-
-    setRows((currentRows) =>
-      currentRows.map((row, index) => {
-        if (index !== rowIndex || row.editingPlayerIndex === playerIndex) {
-          return row;
-        }
-
-        return {
-          ...row,
-          editingPlayerIndex: playerIndex,
-          takerIndex: playerIndex,
-          draftScore: row.takerIndex === null ? '' : row.takerScore
-        };
-      })
-    );
-  };
-
-  const updateDraftScore = (rowIndex: number, value: string) => {
     updateRow(rowIndex, (row) => ({
       ...row,
-      draftScore: value
+      editingPlayerIndex: playerIndex,
+      takerIndex: playerIndex,
+      draftScore: row.takerIndex === playerIndex ? row.takerScore : ''
     }));
   };
 
-  const focusScoreInput = (rowIndex: number, playerIndex: number) => {
-    requestAnimationFrame(() => {
-      const input = inputRefs.current[rowIndex]?.[playerIndex];
-      input?.focus({ preventScroll: true });
-      if (input) {
-        const length = input.value.length;
-        input.setSelectionRange(length, length);
-      }
-    });
-  };
-
-  const toggleScoreSign = (rowIndex: number, playerIndex: number) => {
-    if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
+  // Valide et enregistre la cellule actuellement en cours d'édition.
+  // Si le score n'est pas valide (pas un multiple du diviseur), on affiche une
+  // erreur sous le clavier perso et on laisse la cellule ouverte pour correction.
+  const commitActiveCell = () => {
+    if (!activeCell) {
       return;
     }
 
-    updateRow(rowIndex, (row) => {
-      const currentValue =
-        row.editingPlayerIndex === playerIndex
-          ? row.draftScore
-          : row.takerIndex === playerIndex
-            ? row.takerScore
-            : '';
-
-      const nextValue = currentValue.trim() === '' ? '-' : currentValue.startsWith('-') ? currentValue.slice(1) : `-${currentValue}`;
-
-      return {
-        ...row,
-        takerIndex: playerIndex,
-        editingPlayerIndex: playerIndex,
-        draftScore: nextValue
-      };
-    });
-  };
-
-  const handleScoreSignPointerDown = (rowIndex: number, playerIndex: number, event: React.PointerEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    toggleScoreSign(rowIndex, playerIndex);
-    focusScoreInput(rowIndex, playerIndex);
-  };
-
-  const commitCellScore = (rowIndex: number, playerIndex: number, rawValue: string, inputElement: HTMLInputElement) => {
-    if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
-      return;
-    }
-
+    const { rowIndex, playerIndex } = activeCell;
+    const row = rows[rowIndex];
+    const rawValue = row.draftScore;
     const score = parseScore(rawValue);
+    const isEmptyOrDash = rawValue.trim() === '' || rawValue === '-';
 
-    if (rawValue === '-') {
-      inputElement.setCustomValidity('');
+    if (isEmptyOrDash || score === 0) {
       updateRow(rowIndex, () => ({
-        takerIndex: null,
-        takerScore: '',
+        takerIndex: isEmptyOrDash ? null : playerIndex,
+        takerScore: isEmptyOrDash ? '' : '0',
         editingPlayerIndex: null,
         draftScore: ''
       }));
-      return;
-    }
-
-    if (rawValue.trim() === '' || rawValue === '-' || score === 0) {
-      inputElement.setCustomValidity('');
-      updateRow(rowIndex, () => ({
-        takerIndex: rawValue.trim() === '' || rawValue === '-' ? null : playerIndex,
-        takerScore: rawValue.trim() === '' || rawValue === '-' ? '' : '0',
-        editingPlayerIndex: null,
-        draftScore: ''
-      }));
+      setKeypadError(null);
+      setActiveCell(null);
       return;
     }
 
     if (score === null || score % divider !== 0) {
-      inputElement.setCustomValidity(`Le score doit être un multiple de ${divider}.`);
-      inputElement.reportValidity();
-      requestAnimationFrame(() => inputElement.focus());
-      updateRow(rowIndex, (row) => ({
-        ...row,
-        editingPlayerIndex: playerIndex,
-        draftScore: rawValue
-      }));
+      setKeypadError(`Le score doit être un multiple de ${divider}.`);
       return;
     }
 
-    inputElement.setCustomValidity('');
     updateRow(rowIndex, () => ({
       takerIndex: playerIndex,
       takerScore: rawValue,
       editingPlayerIndex: null,
       draftScore: ''
     }));
+    setKeypadError(null);
+    setActiveCell(null);
+  };
+
+  // Comme commitActiveCell, mais utilisé quand on change de cellule : une saisie
+  // invalide (pas multiple du diviseur) est abandonnée silencieusement plutôt que
+  // de bloquer la navigation vers une autre cellule.
+  const resolveActiveCellForSwitch = () => {
+    if (!activeCell) {
+      return;
+    }
+
+    const { rowIndex, playerIndex } = activeCell;
+    const rawValue = rows[rowIndex].draftScore;
+    const score = parseScore(rawValue);
+    const isEmptyOrDash = rawValue.trim() === '' || rawValue === '-';
+
+    if (isEmptyOrDash || score === 0 || (score !== null && score % divider === 0)) {
+      updateRow(rowIndex, () => ({
+        takerIndex: isEmptyOrDash ? null : playerIndex,
+        takerScore: isEmptyOrDash ? '' : rawValue,
+        editingPlayerIndex: null,
+        draftScore: ''
+      }));
+      return;
+    }
+
+    updateRow(rowIndex, (row) => ({ ...row, editingPlayerIndex: null, draftScore: '' }));
+  };
+
+  // Active une cellule : résout la précédente si besoin, puis ouvre le clavier perso sur la nouvelle.
+  const activateCell = (rowIndex: number, playerIndex: number) => {
+    if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
+      return;
+    }
+
+    if (activeCell && (activeCell.rowIndex !== rowIndex || activeCell.playerIndex !== playerIndex)) {
+      resolveActiveCellForSwitch();
+    }
+
+    setKeypadError(null);
+    startEditingCell(rowIndex, playerIndex);
+    setActiveCell({ rowIndex, playerIndex });
+  };
+
+  const closeKeypad = () => {
+    commitActiveCell();
+  };
+
+  const appendDigit = (digit: string) => {
+    if (!activeCell) {
+      return;
+    }
+
+    const { rowIndex, playerIndex } = activeCell;
+    setKeypadError(null);
+    updateRow(rowIndex, (row) => {
+      if (row.editingPlayerIndex !== playerIndex || row.draftScore.replace('-', '').length >= MAX_SCORE_LENGTH) {
+        return row;
+      }
+
+      return { ...row, draftScore: row.draftScore + digit };
+    });
+  };
+
+  const toggleSign = () => {
+    if (!activeCell) {
+      return;
+    }
+
+    const { rowIndex, playerIndex } = activeCell;
+    setKeypadError(null);
+    updateRow(rowIndex, (row) => {
+      if (row.editingPlayerIndex !== playerIndex) {
+        return row;
+      }
+
+      const nextValue = row.draftScore.startsWith('-') ? row.draftScore.slice(1) : `-${row.draftScore}`;
+      return { ...row, draftScore: nextValue };
+    });
+  };
+
+  const backspaceDigit = () => {
+    if (!activeCell) {
+      return;
+    }
+
+    const { rowIndex, playerIndex } = activeCell;
+    setKeypadError(null);
+    updateRow(rowIndex, (row) => {
+      if (row.editingPlayerIndex !== playerIndex) {
+        return row;
+      }
+
+      return { ...row, draftScore: row.draftScore.slice(0, -1) };
+    });
   };
 
   const applyPlayerSetup = (nextPlayerSetup: PlayerSetup, keepScores: boolean) => {
@@ -264,11 +292,16 @@ export default function App() {
     setGameCount(6);
     setPlayerNames(DEFAULT_PLAYER_NAMES);
     setRows(Array.from({ length: MAX_GAMES }, () => createEmptyRow()));
+    setKeypadError(null);
 
     const firstEditableCell = getFirstEditableCell(targetPlayerSetup);
-    requestAnimationFrame(() => {
-      inputRefs.current[firstEditableCell.rowIndex]?.[firstEditableCell.playerIndex]?.focus();
-    });
+    setActiveCell(firstEditableCell);
+    updateRow(firstEditableCell.rowIndex, (row) => ({
+      ...row,
+      editingPlayerIndex: firstEditableCell.playerIndex,
+      takerIndex: firstEditableCell.playerIndex,
+      draftScore: ''
+    }));
   };
 
   const clearAll = () => {
@@ -455,36 +488,22 @@ export default function App() {
                               ? formatScore(-share)
                               : '';
                       const isNegativeScore = rawScoreValue.trim().startsWith('-');
+                      const isActiveCell = activeCell?.rowIndex === rowIndex && activeCell?.playerIndex === playerIndex;
 
                       return (
                         <td key={`${rowIndex}-${playerIndex}`} className={isGray ? 'gray' : canCalculate ? (isTaker ? 'taker' : 'defender') : 'ghost'}>
-                          <div className="score-field">
-                            {!isGray ? (
-                              <button
-                                type="button"
-                                className={isNegativeScore ? 'score-sign score-sign--active' : 'score-sign'}
-                                aria-label={`Basculer le signe du score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
-                                aria-pressed={isNegativeScore}
-                                onPointerDown={(event) => handleScoreSignPointerDown(rowIndex, playerIndex, event)}
-                              >
-                                −
-                              </button>
-                            ) : null}
-
+                          <div
+                            className={isActiveCell ? 'score-field score-field--active' : 'score-field'}
+                            onClick={isGray ? undefined : () => activateCell(rowIndex, playerIndex)}
+                          >
                             <input
-                              ref={(element) => {
-                                inputRefs.current[rowIndex] = inputRefs.current[rowIndex] ?? [];
-                                inputRefs.current[rowIndex][playerIndex] = element;
-                              }}
                               aria-label={`Score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
-                              inputMode="numeric"
                               type="text"
+                              inputMode="none"
+                              tabIndex={-1}
+                              readOnly
                               value={isGray ? '' : rawScoreValue}
                               className={isNegativeScore ? 'score-negative' : undefined}
-                              readOnly={isGray}
-                              onFocus={() => startEditingCell(rowIndex, playerIndex)}
-                              onChange={(event) => updateDraftScore(rowIndex, event.target.value)}
-                              onBlur={(event) => commitCellScore(rowIndex, playerIndex, rawScoreValue, event.currentTarget)}
                               placeholder={isGray ? '' : '0'}
                             />
                           </div>
@@ -507,6 +526,35 @@ export default function App() {
           </table>
         </div>
       </section>
+
+      {activeCell ? (
+        <div className="keypad-backdrop" role="presentation" onClick={closeKeypad}>
+          <div className="keypad" role="group" aria-label="Clavier numérique" onClick={(event) => event.stopPropagation()}>
+            {keypadError ? <p className="keypad-error">{keypadError}</p> : null}
+
+            <div className="keypad-grid">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                <button key={digit} type="button" onClick={() => appendDigit(digit)}>
+                  {digit}
+                </button>
+              ))}
+              <button type="button" aria-label="Signe moins" onClick={toggleSign}>
+                −
+              </button>
+              <button type="button" onClick={() => appendDigit('0')}>
+                0
+              </button>
+              <button type="button" aria-label="Effacer le dernier chiffre" onClick={backspaceDigit}>
+                ⌫
+              </button>
+            </div>
+
+            <button type="button" className="keypad-confirm" onClick={closeKeypad}>
+              OK
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
