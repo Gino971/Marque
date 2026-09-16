@@ -49,6 +49,10 @@ function formatScore(value: number) {
   return `${value}`;
 }
 
+function formatScoreForDisplay(rawValue: string) {
+  return rawValue.startsWith('-') ? rawValue.slice(1) : rawValue;
+}
+
 function getGrayPlayers(rowIndex: number, playerCount: number) {
   if (playerCount === 5) {
     return [rowIndex % playerCount];
@@ -418,18 +422,27 @@ export default function App() {
                       const isEditing = row.editingPlayerIndex === playerIndex;
                       const isTaker = row.takerIndex === playerIndex;
                       const isGray = grayPlayers.includes(playerIndex);
-                      const displayValue = isEditing
+                      const rawScoreValue = isEditing
                         ? row.draftScore
+                        : isTaker
+                          ? row.takerScore
+                          : row.takerIndex === null
+                            ? ''
+                            : canCalculate && share !== null
+                              ? formatScore(-share)
+                              : '';
+                      const displayValue = isEditing
+                        ? formatScoreForDisplay(rawScoreValue)
                         : isGray
                           ? ''
                           : row.takerIndex === null
                             ? ''
                             : isTaker
-                              ? row.takerScore
+                              ? formatScoreForDisplay(rawScoreValue)
                               : canCalculate && share !== null
-                                ? formatScore(-share)
+                                ? formatScoreForDisplay(rawScoreValue)
                                 : '';
-                      const isNegativeScore = !isEditing && !isGray && displayValue.trim().startsWith('-');
+                      const isNegativeScore = rawScoreValue.trim().startsWith('-');
 
                       return (
                         <td key={`${rowIndex}-${playerIndex}`} className={isGray ? 'gray' : canCalculate ? (isTaker ? 'taker' : 'defender') : 'ghost'}>
@@ -437,8 +450,11 @@ export default function App() {
                             {!isGray ? (
                               <button
                                 type="button"
-                                className="score-sign"
+                                className={isNegativeScore ? 'score-sign score-sign--active' : 'score-sign'}
                                 aria-label={`Basculer le signe du score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
+                                aria-pressed={isNegativeScore}
+                                onPointerDown={(event) => event.preventDefault()}
+                                onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => toggleScoreSign(rowIndex, playerIndex)}
                               >
                                 −
@@ -454,11 +470,13 @@ export default function App() {
                               inputMode="numeric"
                               type="text"
                               value={displayValue}
-                              className={isNegativeScore ? 'score-negative' : undefined}
                               readOnly={isGray}
                               onFocus={() => startEditingCell(rowIndex, playerIndex)}
-                              onChange={(event) => updateDraftScore(rowIndex, event.target.value)}
-                              onBlur={(event) => commitCellScore(rowIndex, playerIndex, event.target.value, event.currentTarget)}
+                              onChange={(event) => {
+                                const rawValue = event.target.value.replace(/^[-]+/, '');
+                                updateDraftScore(rowIndex, isNegativeScore ? `-${rawValue}` : rawValue);
+                              }}
+                              onBlur={(event) => commitCellScore(rowIndex, playerIndex, rawScoreValue, event.currentTarget)}
                               placeholder={isGray ? '' : '0'}
                             />
                           </div>

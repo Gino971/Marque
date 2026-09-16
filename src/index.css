@@ -461,6 +461,11 @@ tfoot th {
     z-index: 1;
   }
 
+  .score-sign--active {
+    background: rgba(250, 204, 21, 0.22);
+    color: #fde68a;
+  }
+
   .score-sign:hover,
   .score-sign:focus-visible {
     background: rgba(250, 204, 21, 0.2);
