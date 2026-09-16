@@ -311,6 +311,10 @@ tfoot th {
   color: #f87171 !important;
 }
 
+.score-sign {
+  display: none;
+}
+
 .defender {
   background: rgba(14, 165, 233, 0.08);
 }
@@ -382,6 +386,10 @@ tfoot th {
     padding: 0.16rem 0.24rem;
     font-size: 0.68rem;
     border-radius: 0.62rem;
+  }
+
+  .score-sign {
+    display: grid;
   }
 
   .reset-button {
