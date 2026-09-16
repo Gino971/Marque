@@ -357,8 +357,8 @@ tfoot th {
   }
 
   .controls {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr) 2.5rem;
-    gap: 0.35rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr) 2.35rem;
+    gap: 0.3rem;
   }
 
   .controls label {
@@ -379,19 +379,19 @@ tfoot th {
 
   .controls input,
   .controls select {
-    padding: 0.28rem 0.4rem;
-    font-size: 0.78rem;
-    border-radius: 0.75rem;
+    padding: 0.24rem 0.34rem;
+    font-size: 0.74rem;
+    border-radius: 0.7rem;
   }
 
   .reset-button {
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.35rem;
+    height: 2.35rem;
   }
 
   .reset-button svg {
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 1.3rem;
+    height: 1.3rem;
   }
 
   .table-card {
@@ -403,23 +403,23 @@ tfoot th {
   }
 
   table {
-    min-width: 760px;
+    min-width: 700px;
   }
 
   th,
   td {
-    padding: 0.24rem;
-    font-size: 0.72rem;
+    padding: 0.18rem;
+    font-size: 0.68rem;
   }
 
   thead th,
   tfoot th {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
   }
 
   .part-header,
   .part-number {
-    width: 2.6rem;
+    width: 2.25rem;
   }
 
   .sticky-left {
@@ -429,12 +429,12 @@ tfoot th {
   thead th input,
   tbody input,
   tfoot th {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
   }
 
   tbody input {
-    padding: 0.22rem 0.3rem;
-    border-radius: 0.7rem;
+    padding: 0.18rem 0.22rem;
+    border-radius: 0.62rem;
   }
 
   .footer-note {

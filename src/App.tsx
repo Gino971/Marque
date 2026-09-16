@@ -406,7 +406,7 @@ export default function App() {
                               inputRefs.current[rowIndex][playerIndex] = element;
                             }}
                             aria-label={`Score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
-                            inputMode="numeric"
+                            inputMode="text"
                             type="text"
                             value={displayValue}
                             className={isNegativeScore ? 'score-negative' : undefined}
