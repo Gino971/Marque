@@ -114,6 +114,39 @@ export default function App() {
     }));
   };
 
+  const toggleScoreSign = (rowIndex: number, playerIndex: number) => {
+    if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
+      return;
+    }
+
+    updateRow(rowIndex, (row) => {
+      const currentValue =
+        row.editingPlayerIndex === playerIndex
+          ? row.draftScore
+          : row.takerIndex === playerIndex
+            ? row.takerScore
+            : '';
+
+      const nextValue = currentValue.startsWith('-') ? currentValue.slice(1) : currentValue ? `-${currentValue}` : '-';
+
+      return {
+        ...row,
+        takerIndex: playerIndex,
+        editingPlayerIndex: playerIndex,
+        draftScore: nextValue
+      };
+    });
+
+    requestAnimationFrame(() => {
+      const input = inputRefs.current[rowIndex]?.[playerIndex];
+      input?.focus();
+      if (input) {
+        const length = input.value.length;
+        input.setSelectionRange(length, length);
+      }
+    });
+  };
+
   const commitCellScore = (rowIndex: number, playerIndex: number, rawValue: string, inputElement: HTMLInputElement) => {
     if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
       return;
@@ -400,22 +433,35 @@ export default function App() {
 
                       return (
                         <td key={`${rowIndex}-${playerIndex}`} className={isGray ? 'gray' : canCalculate ? (isTaker ? 'taker' : 'defender') : 'ghost'}>
-                          <input
-                            ref={(element) => {
-                              inputRefs.current[rowIndex] = inputRefs.current[rowIndex] ?? [];
-                              inputRefs.current[rowIndex][playerIndex] = element;
-                            }}
-                            aria-label={`Score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
-                            inputMode="text"
-                            type="text"
-                            value={displayValue}
-                            className={isNegativeScore ? 'score-negative' : undefined}
-                            readOnly={isGray}
-                            onFocus={() => startEditingCell(rowIndex, playerIndex)}
-                            onChange={(event) => updateDraftScore(rowIndex, event.target.value)}
-                            onBlur={(event) => commitCellScore(rowIndex, playerIndex, event.target.value, event.currentTarget)}
-                            placeholder={isGray ? '' : '0'}
-                          />
+                          <div className="score-field">
+                            {!isGray ? (
+                              <button
+                                type="button"
+                                className="score-sign"
+                                aria-label={`Basculer le signe du score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
+                                onClick={() => toggleScoreSign(rowIndex, playerIndex)}
+                              >
+                                −
+                              </button>
+                            ) : null}
+
+                            <input
+                              ref={(element) => {
+                                inputRefs.current[rowIndex] = inputRefs.current[rowIndex] ?? [];
+                                inputRefs.current[rowIndex][playerIndex] = element;
+                              }}
+                              aria-label={`Score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
+                              inputMode="numeric"
+                              type="text"
+                              value={displayValue}
+                              className={isNegativeScore ? 'score-negative' : undefined}
+                              readOnly={isGray}
+                              onFocus={() => startEditingCell(rowIndex, playerIndex)}
+                              onChange={(event) => updateDraftScore(rowIndex, event.target.value)}
+                              onBlur={(event) => commitCellScore(rowIndex, playerIndex, event.target.value, event.currentTarget)}
+                              placeholder={isGray ? '' : '0'}
+                            />
+                          </div>
                         </td>
                       );
                     })}
