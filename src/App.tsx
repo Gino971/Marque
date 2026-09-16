@@ -49,10 +49,6 @@ function formatScore(value: number) {
   return `${value}`;
 }
 
-function formatScoreForDisplay(rawValue: string) {
-  return rawValue.startsWith('-') ? rawValue.slice(1) : rawValue;
-}
-
 function getGrayPlayers(rowIndex: number, playerCount: number) {
   if (playerCount === 5) {
     return [rowIndex % playerCount];
@@ -131,7 +127,7 @@ export default function App() {
             ? row.takerScore
             : '';
 
-      const nextValue = currentValue.startsWith('-') ? currentValue.slice(1) : currentValue ? `-${currentValue}` : '-';
+      const nextValue = currentValue.trim() === '' ? '-' : currentValue.startsWith('-') ? currentValue.slice(1) : `-${currentValue}`;
 
       return {
         ...row,
@@ -157,6 +153,17 @@ export default function App() {
     }
 
     const score = parseScore(rawValue);
+
+    if (rawValue === '-') {
+      inputElement.setCustomValidity('');
+      updateRow(rowIndex, () => ({
+        takerIndex: null,
+        takerScore: '',
+        editingPlayerIndex: null,
+        draftScore: ''
+      }));
+      return;
+    }
 
     if (rawValue.trim() === '' || score === 0) {
       inputElement.setCustomValidity('');
@@ -431,17 +438,6 @@ export default function App() {
                             : canCalculate && share !== null
                               ? formatScore(-share)
                               : '';
-                      const displayValue = isEditing
-                        ? formatScoreForDisplay(rawScoreValue)
-                        : isGray
-                          ? ''
-                          : row.takerIndex === null
-                            ? ''
-                            : isTaker
-                              ? formatScoreForDisplay(rawScoreValue)
-                              : canCalculate && share !== null
-                                ? formatScoreForDisplay(rawScoreValue)
-                                : '';
                       const isNegativeScore = rawScoreValue.trim().startsWith('-');
 
                       return (
@@ -469,13 +465,10 @@ export default function App() {
                               aria-label={`Score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
                               inputMode="numeric"
                               type="text"
-                              value={displayValue}
+                              value={isGray ? '' : rawScoreValue}
                               readOnly={isGray}
                               onFocus={() => startEditingCell(rowIndex, playerIndex)}
-                              onChange={(event) => {
-                                const rawValue = event.target.value.replace(/^[-]+/, '');
-                                updateDraftScore(rowIndex, isNegativeScore ? `-${rawValue}` : rawValue);
-                              }}
+                              onChange={(event) => updateDraftScore(rowIndex, event.target.value)}
                               onBlur={(event) => commitCellScore(rowIndex, playerIndex, rawScoreValue, event.currentTarget)}
                               placeholder={isGray ? '' : '0'}
                             />
