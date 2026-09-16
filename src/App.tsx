@@ -99,12 +99,20 @@ export default function App() {
       return;
     }
 
-    updateRow(rowIndex, (row) => ({
-      ...row,
-      editingPlayerIndex: playerIndex,
-      takerIndex: playerIndex,
-      draftScore: row.takerIndex === null ? '' : row.takerScore
-    }));
+    setRows((currentRows) =>
+      currentRows.map((row, index) => {
+        if (index !== rowIndex || row.editingPlayerIndex === playerIndex) {
+          return row;
+        }
+
+        return {
+          ...row,
+          editingPlayerIndex: playerIndex,
+          takerIndex: playerIndex,
+          draftScore: row.takerIndex === null ? '' : row.takerScore
+        };
+      })
+    );
   };
 
   const updateDraftScore = (rowIndex: number, value: string) => {
@@ -466,6 +474,7 @@ export default function App() {
                               inputMode="numeric"
                               type="text"
                               value={isGray ? '' : rawScoreValue}
+                              className={isNegativeScore ? 'score-negative' : undefined}
                               readOnly={isGray}
                               onFocus={() => startEditingCell(rowIndex, playerIndex)}
                               onChange={(event) => updateDraftScore(rowIndex, event.target.value)}
