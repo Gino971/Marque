@@ -173,11 +173,11 @@ export default function App() {
       return;
     }
 
-    if (rawValue.trim() === '' || score === 0) {
+    if (rawValue.trim() === '' || rawValue === '-' || score === 0) {
       inputElement.setCustomValidity('');
       updateRow(rowIndex, () => ({
-        takerIndex: rawValue.trim() === '' ? null : playerIndex,
-        takerScore: rawValue.trim() === '' ? '' : '0',
+        takerIndex: rawValue.trim() === '' || rawValue === '-' ? null : playerIndex,
+        takerScore: rawValue.trim() === '' || rawValue === '-' ? '' : '0',
         editingPlayerIndex: null,
         draftScore: ''
       }));
