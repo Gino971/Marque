@@ -502,6 +502,7 @@ export default function App() {
                               inputMode="none"
                               tabIndex={-1}
                               readOnly
+                              onMouseDown={(event) => event.preventDefault()}
                               value={isGray ? '' : rawScoreValue}
                               className={isNegativeScore ? 'score-negative' : undefined}
                               placeholder={isGray ? '' : '0'}
