@@ -11,7 +11,6 @@ const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 6;
 const MIN_GAMES = 3;
 const MAX_GAMES = 10;
-const DEFAULT_PLAYER_NAMES = ['J1', 'J2', 'J3', 'J4', 'J5', 'J6'];
 const PLAYER_SETUP_OPTIONS = ['3x3', '3x2', '4', '5', '6'] as const;
 type PlayerSetup = (typeof PLAYER_SETUP_OPTIONS)[number];
 
@@ -80,7 +79,6 @@ function getFirstEditableCell(playerSetup: PlayerSetup) {
 export default function App() {
   const [playerSetup, setPlayerSetup] = useState<PlayerSetup>('4');
   const [gameCount, setGameCount] = useState(6);
-  const [playerNames, setPlayerNames] = useState(DEFAULT_PLAYER_NAMES);
   const [rows, setRows] = useState<RowState[]>(() => Array.from({ length: MAX_GAMES }, () => createEmptyRow()));
   const [pendingPlayerSetup, setPendingPlayerSetup] = useState<PlayerSetup | null>(null);
   const [pendingReset, setPendingReset] = useState(false);
@@ -253,7 +251,6 @@ export default function App() {
 
     setPlayerSetup(nextPlayerSetup);
 
-    setPlayerNames((currentNames) => currentNames.map((name, index) => (index < nextPlayerCount ? name : DEFAULT_PLAYER_NAMES[index])));
     setRows((currentRows) =>
       currentRows.map((row, rowIndex) => {
         const grayPlayers = getGrayPlayers(rowIndex, nextPlayerCount);
@@ -290,7 +287,6 @@ export default function App() {
     setPendingReset(false);
     setPlayerSetup(targetPlayerSetup);
     setGameCount(6);
-    setPlayerNames(DEFAULT_PLAYER_NAMES);
     setRows(Array.from({ length: MAX_GAMES }, () => createEmptyRow()));
     setKeypadError(null);
 
@@ -447,18 +443,7 @@ export default function App() {
               <tr>
                 <th className="sticky-left part-header">N°</th>
                 {visiblePlayers.map((playerIndex) => (
-                  <th key={`header-${playerIndex}`}>
-                    <input
-                      aria-label={`Nom du joueur ${playerIndex + 1}`}
-                      value={playerNames[playerIndex]}
-                      placeholder={`J${playerIndex + 1}`}
-                      onChange={(event) =>
-                        setPlayerNames((currentNames) =>
-                          currentNames.map((name, index) => (index === playerIndex ? event.target.value : name))
-                        )
-                      }
-                    />
-                  </th>
+                  <th key={`header-${playerIndex}`}>J{playerIndex + 1}</th>
                 ))}
               </tr>
             </thead>

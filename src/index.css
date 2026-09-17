@@ -251,8 +251,7 @@ h1 {
 }
 
 table {
-  width: 100%;
-  min-width: 920px;
+  width: auto;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
@@ -265,6 +264,7 @@ td {
   padding: 0.46rem;
   vertical-align: middle;
   text-align: center;
+  width: 6.3rem;
 }
 
 thead th {
@@ -527,13 +527,14 @@ tfoot th {
   }
 
   table {
-    min-width: 700px;
+    width: auto;
   }
 
   th,
   td {
     padding: 0.18rem;
     font-size: 0.68rem;
+    width: 4.1rem;
   }
 
   thead th,
