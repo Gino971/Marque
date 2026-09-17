@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 type RowState = {
   takerIndex: number | null;
   takerScore: string;
   editingPlayerIndex: number | null;
   draftScore: string;
+  manualGray: number[] | null;
 };
 
 const MIN_PLAYERS = 3;
@@ -31,7 +32,8 @@ function createEmptyRow(): RowState {
     takerIndex: null,
     takerScore: '',
     editingPlayerIndex: null,
-    draftScore: ''
+    draftScore: '',
+    manualGray: null
   };
 }
 
@@ -64,6 +66,12 @@ function isGrayPlayer(rowIndex: number, playerCount: number, playerIndex: number
   return getGrayPlayers(rowIndex, playerCount).includes(playerIndex);
 }
 
+// Renvoie les joueurs inactifs d'une partie : la correction manuelle (échange par
+// double-clic) si elle existe pour cette ligne, sinon la rotation automatique.
+function getRowGrayPlayers(row: RowState, rowIndex: number, playerCount: number) {
+  return row.manualGray ?? getGrayPlayers(rowIndex, playerCount);
+}
+
 function getFirstEditableCell(playerSetup: PlayerSetup) {
   const { playerCount } = getPlayerSetupConfig(playerSetup);
 
@@ -84,6 +92,8 @@ export default function App() {
   const [pendingReset, setPendingReset] = useState(false);
   const [activeCell, setActiveCell] = useState<{ rowIndex: number; playerIndex: number } | null>(null);
   const [keypadError, setKeypadError] = useState<string | null>(null);
+  const [swapSelection, setSwapSelection] = useState<{ rowIndex: number; playerIndex: number } | null>(null);
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { playerCount, divider } = getPlayerSetupConfig(playerSetup);
   const visiblePlayers = useMemo(() => Array.from({ length: playerCount }, (_, index) => index), [playerCount]);
@@ -119,7 +129,8 @@ export default function App() {
     const isEmptyOrDash = rawValue.trim() === '' || rawValue === '-';
 
     if (isEmptyOrDash || score === 0) {
-      updateRow(rowIndex, () => ({
+      updateRow(rowIndex, (r) => ({
+        ...r,
         takerIndex: isEmptyOrDash ? null : playerIndex,
         takerScore: isEmptyOrDash ? '' : '0',
         editingPlayerIndex: null,
@@ -135,7 +146,8 @@ export default function App() {
       return;
     }
 
-    updateRow(rowIndex, () => ({
+    updateRow(rowIndex, (r) => ({
+      ...r,
       takerIndex: playerIndex,
       takerScore: rawValue,
       editingPlayerIndex: null,
@@ -159,7 +171,8 @@ export default function App() {
     const isEmptyOrDash = rawValue.trim() === '' || rawValue === '-';
 
     if (isEmptyOrDash || score === 0 || (score !== null && score % divider === 0)) {
-      updateRow(rowIndex, () => ({
+      updateRow(rowIndex, (r) => ({
+        ...r,
         takerIndex: isEmptyOrDash ? null : playerIndex,
         takerScore: isEmptyOrDash ? '' : rawValue,
         editingPlayerIndex: null,
@@ -173,7 +186,7 @@ export default function App() {
 
   // Active une cellule : résout la précédente si besoin, puis ouvre le clavier perso sur la nouvelle.
   const activateCell = (rowIndex: number, playerIndex: number) => {
-    if (isGrayPlayer(rowIndex, playerCount, playerIndex)) {
+    if (getRowGrayPlayers(rows[rowIndex], rowIndex, playerCount).includes(playerIndex)) {
       return;
     }
 
@@ -188,6 +201,68 @@ export default function App() {
 
   const closeKeypad = () => {
     commitActiveCell();
+  };
+
+  // Échange le statut actif/inactif de deux joueurs pour une partie donnée.
+  // Premier double-clic : on mémorise la case. Deuxième double-clic sur une case
+  // de statut opposé (dans la même partie) : les deux joueurs échangent leur statut.
+  const handleInactiveSwap = (rowIndex: number, playerIndex: number) => {
+    if (!swapSelection || swapSelection.rowIndex !== rowIndex) {
+      setSwapSelection({ rowIndex, playerIndex });
+      return;
+    }
+
+    if (swapSelection.playerIndex === playerIndex) {
+      setSwapSelection(null);
+      return;
+    }
+
+    const row = rows[rowIndex];
+    const grayPlayers = getRowGrayPlayers(row, rowIndex, playerCount);
+    const firstIsGray = grayPlayers.includes(swapSelection.playerIndex);
+    const secondIsGray = grayPlayers.includes(playerIndex);
+
+    if (firstIsGray === secondIsGray) {
+      // Deux joueurs de même statut : rien à échanger, on redémarre la sélection ici.
+      setSwapSelection({ rowIndex, playerIndex });
+      return;
+    }
+
+    const nextGray = grayPlayers.map((player) =>
+      player === swapSelection.playerIndex ? playerIndex : player === playerIndex ? swapSelection.playerIndex : player
+    );
+
+    updateRow(rowIndex, (r) => {
+      const newlyInactiveIsTaker = r.takerIndex !== null && nextGray.includes(r.takerIndex);
+      return {
+        ...r,
+        manualGray: nextGray,
+        ...(newlyInactiveIsTaker
+          ? { takerIndex: null, takerScore: '', editingPlayerIndex: null, draftScore: '' }
+          : {})
+      };
+    });
+    setSwapSelection(null);
+  };
+
+  // Un simple clic ouvre le clavier de saisie ; un double-clic (ou double-tap) sur
+  // deux cases d'une même partie échange leur statut actif/inactif à la place.
+  const handleCellClick = (rowIndex: number, playerIndex: number) => {
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+    clickTimeoutRef.current = setTimeout(() => {
+      clickTimeoutRef.current = null;
+      activateCell(rowIndex, playerIndex);
+    }, 220);
+  };
+
+  const handleCellDoubleClick = (rowIndex: number, playerIndex: number) => {
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+    handleInactiveSwap(rowIndex, playerIndex);
   };
 
   const appendDigit = (digit: string) => {
@@ -256,14 +331,15 @@ export default function App() {
         const grayPlayers = getGrayPlayers(rowIndex, nextPlayerCount);
 
         if (row.takerIndex === null || (row.takerIndex < nextPlayerCount && !grayPlayers.includes(row.takerIndex))) {
-          return row;
+          return { ...row, manualGray: null };
         }
 
         return {
           takerIndex: null,
           takerScore: '',
           editingPlayerIndex: null,
-          draftScore: ''
+          draftScore: '',
+          manualGray: null
         };
       })
     );
@@ -309,7 +385,7 @@ export default function App() {
       let total = 0;
 
       visibleRows.forEach((row, rowIndex) => {
-        const grayPlayers = getGrayPlayers(rowIndex, playerCount);
+        const grayPlayers = getRowGrayPlayers(row, rowIndex, playerCount);
 
         if (grayPlayers.includes(playerIndex)) {
           return;
@@ -451,7 +527,7 @@ export default function App() {
             <tbody>
               {visibleRows.map((row, rowIndex) => {
                 const score = parseScore(row.takerScore);
-                const grayPlayers = getGrayPlayers(rowIndex, playerCount);
+                const grayPlayers = getRowGrayPlayers(row, rowIndex, playerCount);
                 const canCalculate = row.takerIndex !== null && score !== null && score % divider === 0;
                 const share = canCalculate ? score / divider : null;
 
@@ -474,12 +550,19 @@ export default function App() {
                               : '';
                       const isNegativeScore = rawScoreValue.trim().startsWith('-');
                       const isActiveCell = activeCell?.rowIndex === rowIndex && activeCell?.playerIndex === playerIndex;
+                      const isSwapPending = swapSelection?.rowIndex === rowIndex && swapSelection?.playerIndex === playerIndex;
+
+                      let fieldClassName = isActiveCell ? 'score-field score-field--active' : 'score-field';
+                      if (isSwapPending) {
+                        fieldClassName += ' score-field--swap-pending';
+                      }
 
                       return (
                         <td key={`${rowIndex}-${playerIndex}`} className={isGray ? 'gray' : canCalculate ? (isTaker ? 'taker' : 'defender') : 'ghost'}>
                           <div
-                            className={isActiveCell ? 'score-field score-field--active' : 'score-field'}
-                            onClick={isGray ? undefined : () => activateCell(rowIndex, playerIndex)}
+                            className={fieldClassName}
+                            onClick={() => handleCellClick(rowIndex, playerIndex)}
+                            onDoubleClick={() => handleCellDoubleClick(rowIndex, playerIndex)}
                           >
                             <input
                               aria-label={`Score de J${playerIndex + 1} pour la partie ${rowIndex + 1}`}
