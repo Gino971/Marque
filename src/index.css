@@ -145,11 +145,11 @@ h1 {
 }
 
 .controls label:first-of-type select {
-  width: 8.5rem;
+  width: 11.3rem;
 }
 
 .controls label:nth-of-type(2) select {
-  width: 8.5rem;
+  width: 11.3rem;
 }
 
 .reset-button {
@@ -290,7 +290,7 @@ tbody input {
 
 tfoot th {
   background: rgba(15, 23, 42, 0.92);
-  font-size: 1rem;
+  font-size: 1.3rem;
 }
 
 .sticky-left {
@@ -477,11 +477,11 @@ tfoot th {
   }
 
   .controls label:first-of-type select {
-    width: 6.4rem;
+    width: 8.5rem;
   }
 
   .controls label:nth-of-type(2) select {
-    width: 6.4rem;
+    width: 8.5rem;
   }
 
   .controls label {
@@ -537,8 +537,7 @@ tfoot th {
     width: 4.1rem;
   }
 
-  thead th,
-  tfoot th {
+  thead th {
     font-size: 0.68rem;
   }
 
@@ -556,7 +555,7 @@ tfoot th {
   }
 
   tfoot th {
-    font-size: 0.68rem;
+    font-size: 1.1rem;
   }
 
   tbody input {

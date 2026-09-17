@@ -377,7 +377,7 @@ export default function App() {
             <select value={gameCount} onChange={(event) => setGameCount(Number(event.target.value))}>
               {Array.from({ length: MAX_GAMES - MIN_GAMES + 1 }, (_, index) => MIN_GAMES + index).map((count) => (
                 <option key={count} value={count}>
-                  {count}
+                  {count} parties
                 </option>
               ))}
             </select>
