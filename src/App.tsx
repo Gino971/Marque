@@ -354,7 +354,7 @@ export default function App() {
                 if (setup === '3x3') {
                   return (
                     <option key={setup} value={setup}>
-                      3 joueurs X3 (D=-P/3)
+                      3 (X3)
                     </option>
                   );
                 }
@@ -362,7 +362,7 @@ export default function App() {
                 if (setup === '3x2') {
                   return (
                     <option key={setup} value={setup}>
-                      3 joueurs X2 (D=-P/2)
+                      3 (X2)
                     </option>
                   );
                 }

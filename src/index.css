@@ -106,7 +106,8 @@ h1 {
 
 .controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: auto auto auto;
+  justify-content: start;
   gap: 0.5rem;
   align-items: end;
 }
@@ -123,8 +124,32 @@ h1 {
 
 .controls input,
 .controls select {
-  padding: 0.34rem 0.5rem;
-  font-size: 0.85rem;
+  padding: 0.4rem 0.35rem;
+  font-size: 1rem;
+  height: 2.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.controls select {
+  background: rgba(250, 204, 21, 0.14);
+  border-color: rgba(250, 204, 21, 0.55);
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.controls select:focus {
+  border-color: rgba(250, 204, 21, 0.9);
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.22);
+}
+
+.controls label:first-of-type select {
+  width: 4.25rem;
+}
+
+.controls label:nth-of-type(2) select {
+  width: 2rem;
 }
 
 .reset-button {
@@ -252,6 +277,16 @@ thead th input {
   text-align: center;
 }
 
+tbody input {
+  width: 1.8rem;
+  max-width: 100%;
+  margin: 0 auto;
+  height: 3rem;
+  font-size: 1.3rem;
+  padding: 0.3rem 0.15rem;
+  text-align: center;
+}
+
 tfoot th {
   background: rgba(15, 23, 42, 0.92);
   font-size: 1rem;
@@ -314,6 +349,8 @@ tfoot th {
 .score-field {
   position: relative;
   cursor: pointer;
+  display: flex;
+  justify-content: center;
 }
 
 .score-field input {
@@ -433,8 +470,17 @@ tfoot th {
   }
 
   .controls {
-    grid-template-columns: minmax(0, 0.86fr) minmax(0, 0.58fr) 2.05rem;
-    gap: 0.18rem;
+    grid-template-columns: auto auto auto;
+    justify-content: start;
+    gap: 0.3rem;
+  }
+
+  .controls label:first-of-type select {
+    width: 3.2rem;
+  }
+
+  .controls label:nth-of-type(2) select {
+    width: 1.55rem;
   }
 
   .controls label {
@@ -455,8 +501,9 @@ tfoot th {
 
   .controls input,
   .controls select {
-    padding: 0.16rem 0.24rem;
-    font-size: 0.68rem;
+    padding: 0.2rem 0.2rem;
+    font-size: 0.85rem;
+    height: 2.3rem;
     border-radius: 0.62rem;
   }
 
@@ -506,14 +553,15 @@ tfoot th {
     font-size: 16px;
   }
 
-  tbody input,
   tfoot th {
     font-size: 0.68rem;
   }
 
   tbody input {
-    min-height: 2rem;
-    padding: 0.22rem 0.18rem;
+    width: 1.25rem;
+    height: 2.6rem;
+    padding: 0.15rem 0.05rem;
+    font-size: 1.1rem;
     border-radius: 0.62rem;
   }
 
