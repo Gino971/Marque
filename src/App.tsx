@@ -416,7 +416,7 @@ export default function App() {
   return (
     <main className="app-shell">
       <section className="hero-card">
-        <h1>Feuille de marque autonome</h1>
+        <h1>Feuille de marque</h1>
 
         <div className="controls">
           <label>
