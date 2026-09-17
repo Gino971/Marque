@@ -145,11 +145,11 @@ h1 {
 }
 
 .controls label:first-of-type select {
-  width: 4.25rem;
+  width: 8.5rem;
 }
 
 .controls label:nth-of-type(2) select {
-  width: 2rem;
+  width: 8.5rem;
 }
 
 .reset-button {
@@ -253,6 +253,7 @@ h1 {
 table {
   width: 100%;
   min-width: 920px;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -278,7 +279,7 @@ thead th input {
 }
 
 tbody input {
-  width: 1.8rem;
+  width: 5.4rem;
   max-width: 100%;
   margin: 0 auto;
   height: 3rem;
@@ -476,11 +477,11 @@ tfoot th {
   }
 
   .controls label:first-of-type select {
-    width: 3.2rem;
+    width: 6.4rem;
   }
 
   .controls label:nth-of-type(2) select {
-    width: 1.55rem;
+    width: 6.4rem;
   }
 
   .controls label {
@@ -558,7 +559,7 @@ tfoot th {
   }
 
   tbody input {
-    width: 1.25rem;
+    width: 3.75rem;
     height: 2.6rem;
     padding: 0.15rem 0.05rem;
     font-size: 1.1rem;
