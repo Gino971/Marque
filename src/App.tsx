@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type RowState = {
   takerIndex: number | null;
@@ -84,16 +84,68 @@ function getFirstEditableCell(playerSetup: PlayerSetup) {
   return { rowIndex: 0, playerIndex: 0 };
 }
 
+const STORAGE_KEY = 'feuille-de-marque:partie-en-cours';
+
+type PersistedState = {
+  playerSetup: PlayerSetup;
+  gameCount: number;
+  rows: RowState[];
+};
+
+// Relit la partie sauvegardée localement (localStorage) si elle existe et a une forme valide.
+// En cas d'erreur (stockage indisponible, données corrompues) on repart simplement de zéro.
+function loadPersistedState(): PersistedState | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (
+      !parsed ||
+      !PLAYER_SETUP_OPTIONS.includes(parsed.playerSetup) ||
+      typeof parsed.gameCount !== 'number' ||
+      !Array.isArray(parsed.rows)
+    ) {
+      return null;
+    }
+
+    const rows = Array.from({ length: MAX_GAMES }, (_, index) => {
+      const savedRow = parsed.rows[index];
+      return savedRow && typeof savedRow === 'object' ? { ...createEmptyRow(), ...savedRow } : createEmptyRow();
+    });
+
+    return { playerSetup: parsed.playerSetup, gameCount: parsed.gameCount, rows };
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
-  const [playerSetup, setPlayerSetup] = useState<PlayerSetup>('4');
-  const [gameCount, setGameCount] = useState(6);
-  const [rows, setRows] = useState<RowState[]>(() => Array.from({ length: MAX_GAMES }, () => createEmptyRow()));
+  const [persisted] = useState(() => loadPersistedState());
+  const [playerSetup, setPlayerSetup] = useState<PlayerSetup>(persisted?.playerSetup ?? '4');
+  const [gameCount, setGameCount] = useState(persisted?.gameCount ?? 6);
+  const [rows, setRows] = useState<RowState[]>(
+    () => persisted?.rows ?? Array.from({ length: MAX_GAMES }, () => createEmptyRow())
+  );
   const [pendingPlayerSetup, setPendingPlayerSetup] = useState<PlayerSetup | null>(null);
   const [pendingReset, setPendingReset] = useState(false);
   const [activeCell, setActiveCell] = useState<{ rowIndex: number; playerIndex: number } | null>(null);
   const [keypadError, setKeypadError] = useState<string | null>(null);
   const [swapSelection, setSwapSelection] = useState<{ rowIndex: number; playerIndex: number } | null>(null);
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sauvegarde automatique de la partie en cours, pour ne rien perdre si l'app
+  // doit se recharger (ex. cache vidé par iOS) en pleine soirée de tarot.
+  useEffect(() => {
+    try {
+      const toSave: PersistedState = { playerSetup, gameCount, rows };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch {
+      // Stockage indisponible (navigation privée, quota dépassé...) : on continue sans sauvegarder.
+    }
+  }, [playerSetup, gameCount, rows]);
 
   const { playerCount, divider } = getPlayerSetupConfig(playerSetup);
   const visiblePlayers = useMemo(() => Array.from({ length: playerCount }, (_, index) => index), [playerCount]);
@@ -588,7 +640,9 @@ export default function App() {
               <tr>
                 <th className="sticky-left">Total</th>
                 {totals.map((total, playerIndex) => (
-                  <th key={`total-${playerIndex}`}>{formatScore(total)}</th>
+                  <th key={`total-${playerIndex}`} className={total < 0 ? 'score-negative' : undefined}>
+                    {formatScore(total)}
+                  </th>
                 ))}
               </tr>
             </tfoot>
